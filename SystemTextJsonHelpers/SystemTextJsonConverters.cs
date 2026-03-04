@@ -28,8 +28,10 @@ namespace SystemTextJsonHelpers
     /// </summary>
     public class JsonRelaxedBooleanStringConverter() : JsonConverter<bool>
     {
-        private static readonly JsonException BooleanParsingException = new("The boolean property could not be read as a valid boolean" +
-                                                                            " json value or parsed from boolean string value (e.g. 'true'/'false').");
+        private static readonly JsonException BooleanParsingException = new(
+            "The boolean property could not be read as a valid boolean json value or parsed from boolean string value (e.g. 'true'/'false')."
+        );
+
         public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.TokenType switch
         {
             JsonTokenType.True => true,
@@ -50,14 +52,13 @@ namespace SystemTextJsonHelpers
 
     public class JsonRelaxedNullableIntConverter : JsonConverter<int?>
     {
-        public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => reader.TokenType switch
-            {
-                JsonTokenType.Null => null,
-                JsonTokenType.Number => reader.GetInt32(),
-                JsonTokenType.String => reader.GetString()!.ParseAsNullableInt(),
-                _ => null
-            };
+        public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.TokenType switch
+        {
+            JsonTokenType.Null => null,
+            JsonTokenType.Number => reader.GetInt32(),
+            JsonTokenType.String => reader.GetString()!.ParseAsNullableInt(),
+            _ => null
+        };
 
         public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
         {
