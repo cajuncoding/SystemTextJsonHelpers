@@ -1,7 +1,7 @@
 ﻿using SystemTextJsonHelpers;
 
 [TestClass]
-public class TestBootstrap
+public class TestsBootstrapper
 {
     [AssemblyInitialize]
     public static void AssemblyInit(TestContext context)

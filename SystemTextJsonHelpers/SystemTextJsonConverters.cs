@@ -26,7 +26,7 @@ namespace SystemTextJsonHelpers
     /// Taken directly from Original @CajunCoding's Gist Source: https://gist.github.com/cajuncoding/00896396fdeddabdd661aca8524165d1
     /// 
     /// </summary>
-    public class JsonRelaxedBooleanStringConverter() : JsonConverter<bool>
+    public class JsonRelaxedBooleanConverter() : JsonConverter<bool>
     {
         private static readonly JsonException BooleanParsingException = new(
             "The boolean property could not be read as a valid boolean json value or parsed from boolean string value (e.g. 'true'/'false')."
@@ -36,13 +36,7 @@ namespace SystemTextJsonHelpers
         {
             JsonTokenType.True => true,
             JsonTokenType.False => false,
-            JsonTokenType.String => reader.GetString() switch
-            {
-                //NOTE: string.Equals() is null safe...
-                var value when string.Equals(value, bool.TrueString, StringComparison.OrdinalIgnoreCase) => true,
-                var value when string.Equals(value, bool.FalseString, StringComparison.OrdinalIgnoreCase) => false,
-                _ => throw BooleanParsingException
-            },
+            JsonTokenType.String => bool.TryParse(reader.GetString(), out var parsedBool) ? parsedBool : throw BooleanParsingException,
             _ => throw BooleanParsingException
         };
 
@@ -50,22 +44,23 @@ namespace SystemTextJsonHelpers
             => writer.WriteBooleanValue(value);
     }
 
-    public class JsonRelaxedNullableIntConverter : JsonConverter<int?>
-    {
-        public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.TokenType switch
-        {
-            JsonTokenType.Null => null,
-            JsonTokenType.Number => reader.GetInt32(),
-            JsonTokenType.String => reader.GetString()!.ParseAsNullableInt(),
-            _ => null
-        };
+    //public class JsonRelaxedNullableIntConverter : JsonConverter<int?>
+    //{
+    //    public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.TokenType switch
+    //    {
+    //        JsonTokenType.Null => null,
+    //        JsonTokenType.Number => reader.GetInt32(),
+    //        JsonTokenType.String => int.TryParse(reader.GetString(), out var parsedInt) ? parsedInt : null,
+    //        _ => null
+    //    };
 
-        public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
-        {
-            if (value.HasValue)
-                writer.WriteNumberValue(value.Value);
-            else
-                writer.WriteNullValue();
-        }
-    }
+    //    public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
+    //    {
+    //        if (value.HasValue)
+    //            writer.WriteNumberValue(value.Value);
+    //        else
+    //            writer.WriteNullValue();
+    //    }
+    //}
+
 }

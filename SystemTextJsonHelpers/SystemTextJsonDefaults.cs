@@ -61,7 +61,9 @@ namespace SystemTextJsonHelpers
             var converters = options.Converters;
             converters.Add(new JsonRelaxedDateTimeConverter());
             converters.Add(new JsonRelaxedDateTimeOffsetConverter());
-            converters.Add(new JsonRelaxedBooleanStringConverter());
+            converters.Add(new JsonRelaxedBooleanConverter());
+            //converters.Add(new JsonRelaxedNullableIntConverter());
+            converters.Add(new RelaxedNullableNumberConverterFactory());
             converters.Add(new JsonStringEnumConverter());
 
             return options;
