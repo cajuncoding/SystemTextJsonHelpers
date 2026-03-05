@@ -59,9 +59,9 @@ namespace SystemTextJsonHelpers
 
             //Add Converters that will help provide more relaxed parsing (similar to Newtonsoft.Json)...
             var converters = options.Converters;
-            converters.Add(new JsonRelaxedBooleanConverter());
-            converters.Add(new JsonStringEnumConverter());
-            converters.Add(new JsonRelaxedNullableConverterFactory());
+            converters.Add(new JsonRelaxedBooleanConverter()); //REQUIRED to handle relaxed parsing of non-Nullable boolean values!
+            converters.Add(new JsonStringEnumMemberConverter()); //Macross.JsonStringEnumMemberConverter Provides enhanced parsing of string Enums and supports [EnumMember(Value = "...")] & [JsonPropertyName("...")] annotations!
+            converters.Add(new JsonRelaxedNullableConverterFactory()); //REQUIRED to handle relaxed parsing of Nullable values!
 
             return options;
         }).Invoke();

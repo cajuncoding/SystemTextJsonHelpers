@@ -1,4 +1,7 @@
-﻿namespace SystemTextJsonHelpers.Tests
+﻿using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
+
+namespace SystemTextJsonHelpers.Tests
 {
     [TestClass]
     public sealed class SystemTextJsonConverterTests
@@ -12,14 +15,16 @@
             bool? BooleanTrueNullable,
             bool? BooleanTrueNullableString,
             bool? BooleanTrueNullableCaseInsensitive,
-            bool? BooleanTrueNullableNull,
             bool BooleanFalse,
             bool BooleanFalseString,
             bool BooleanFalseCaseInsensitive,
             bool? BooleanFalseNullable,
             bool? BooleanFalseNullableString,
             bool? BooleanFalseNullableCaseInsensitive,
-            bool? BooleanFalseNullableNull
+            bool? BooleanFalseNullableNull,
+
+            bool? BooleanNullableInvalid,
+            bool? BooleanNullableWhiteSpace
         );
 
         [TestMethod]
@@ -32,7 +37,6 @@
                 ""booleanTrueNullable"": true,
                 ""booleanTrueNullableString"": ""true"",
                 ""booleanTrueNullableCaseInsensitive"": ""TRuE"",
-                ""booleanTrueNullableNull"": null,
                 ""booleanFalse"": false,
                 ""booleanFalseString"": ""false"",
                 ""booleanFalseCaseInsensitive"": ""FALsE"",
@@ -40,6 +44,9 @@
                 ""booleanFalseNullableString"": ""false"",
                 ""booleanFalseNullableCaseInsensitive"": ""FALsE"",
                 ""booleanFalseNullableNull"": null,
+
+                ""booleanNullableInvalid"": ""not-a-boolean"",
+                ""booleanNullableWhiteSpace"": ""     ""
             }".FromJsonTo<BooleanTest>();
 
             Assert.IsNotNull(t);
@@ -49,8 +56,7 @@
             Assert.IsTrue(t.BooleanTrueNullable);
             Assert.IsTrue(t.BooleanTrueNullableString);
             Assert.IsTrue(t.BooleanTrueNullableCaseInsensitive);
-            Assert.IsNull(t.BooleanTrueNullableNull);
-
+            
             Assert.IsFalse(t.BooleanFalse);
             Assert.IsFalse(t.BooleanFalseString);
             Assert.IsFalse(t.BooleanFalseCaseInsensitive);
@@ -58,6 +64,9 @@
             Assert.IsFalse(t.BooleanFalseNullableString);
             Assert.IsFalse(t.BooleanFalseNullableCaseInsensitive);
             Assert.IsNull(t.BooleanFalseNullableNull);
+
+            Assert.IsNull(t.BooleanNullableInvalid);
+            Assert.IsNull(t.BooleanNullableWhiteSpace);
         }
 
         public record IntegerTest(
@@ -224,15 +233,25 @@
             Assert.IsNull(t.GuidNullableNull);
             Assert.IsNull(t.GuidNullableInvalid);
             Assert.AreEqual("https://example.com/path?q=1", t.Uri.OriginalString);
+            Assert.IsTrue(t.Uri.IsAbsoluteUri);
             Assert.IsNull(t.UriNullableNull);
             Assert.IsNotNull(t.UriNullableInvalidButStillOk);
+            Assert.IsFalse(t.UriNullableInvalidButStillOk.IsAbsoluteUri);
         }
 
-        public enum Color { Red, Green, Blue }
+        public enum Color { 
+            Red,
+            [JsonPropertyName("green-color")]
+            Green,
+            [EnumMember(Value = "blue-color")]
+            Blue
+        }
 
         public record EnumTest(
             Color Color,
             Color ColorCaseInsensitive,
+            Color ColorByEnumMemberAnnotation,
+            Color ColorByJsonPropertyAnnotation,
             Color? ColorNullable,
             Color? ColorNullableCaseInsensitive,
             Color? ColorNullableNull,
@@ -245,6 +264,8 @@
             var t = @"{
                 ""color"": ""Red"",
                 ""colorCaseInsensitive"": ""gReEn"",
+                ""colorByEnumMemberAnnotation"": ""blue-color"",
+                ""colorByJsonPropertyAnnotation"": ""green-color"",
                 ""colorNullable"": ""Blue"",
                 ""colorNullableCaseInsensitive"": ""rEd"",
                 ""colorNullableNull"": null,
@@ -253,6 +274,8 @@
 
             Assert.AreEqual(Color.Red, t.Color);
             Assert.AreEqual(Color.Green, t.ColorCaseInsensitive);
+            Assert.AreEqual(Color.Blue, t.ColorByEnumMemberAnnotation);
+            Assert.AreEqual(Color.Green, t.ColorByJsonPropertyAnnotation);
             Assert.AreEqual(Color.Blue, t.ColorNullable);
             Assert.AreEqual(Color.Red, t.ColorNullableCaseInsensitive);
             Assert.IsNull(t.ColorNullableNull);
