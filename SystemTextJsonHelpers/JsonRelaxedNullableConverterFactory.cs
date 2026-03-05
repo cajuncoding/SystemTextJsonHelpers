@@ -1,15 +1,13 @@
 ﻿#nullable enable
 using System;
-using System.Buffers;
 using System.Globalization;
 using System.Numerics;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SystemTextJsonHelpers
 {
-    public sealed class RelaxedNullableConverterFactory : JsonConverterFactory
+    public sealed class JsonRelaxedNullableConverterFactory : JsonConverterFactory
     {
         private static readonly Type NullableOpenType = typeof(Nullable<>);
 
@@ -23,7 +21,6 @@ namespace SystemTextJsonHelpers
             return IsSupportedNumber(innerType)
                 || innerType == typeof(bool)
                 || innerType == typeof(Guid)
-                || innerType == typeof(Uri)
                 || innerType == typeof(DateTime)
                 || innerType == typeof(DateTimeOffset)
                 || innerType == typeof(TimeSpan)
@@ -58,7 +55,9 @@ namespace SystemTextJsonHelpers
         where TNumber : struct, INumber<TNumber>, IParsable<TNumber>
     {
         private static readonly IFormatProvider Invariant = CultureInfo.InvariantCulture;
-
+        private static bool IsSignedIntegral(Type t) => t == typeof(long) || t == typeof(int) || t == typeof(short) || t == typeof(sbyte);
+        private static bool IsUnsignedIntegral(Type t) => t == typeof(ulong) || t == typeof(uint) || t == typeof(ushort) || t == typeof(byte);
+        
         public override TNumber? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var tokenType = reader.TokenType;
@@ -70,9 +69,6 @@ namespace SystemTextJsonHelpers
             {
                 try
                 {
-                    static bool IsSignedIntegral(Type t) => t == typeof(long) || t == typeof(int) || t == typeof(short) || t == typeof(sbyte);
-                    static bool IsUnsignedIntegral(Type t) => t == typeof(ulong) || t == typeof(uint) || t == typeof(ushort) || t == typeof(byte);
-
                     return typeof(TNumber) switch
                     {
                         var t when t == typeof(decimal) && reader.TryGetDecimal(out var dec) => dec.As<TNumber>(),
@@ -94,9 +90,10 @@ namespace SystemTextJsonHelpers
 
             if (tokenType is JsonTokenType.String)
             {
-                ReadOnlySpan<byte> utf8 = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-                var s = Encoding.UTF8.GetString(utf8);
-                return TNumber.TryParse(s, Invariant, out var parsedNumber) ? parsedNumber : null;
+                var s = reader.GetString();
+                return !string.IsNullOrWhiteSpace(s)
+                    ? TNumber.TryParse(s, Invariant, out var parsedNumber) ? parsedNumber : null
+                    : null;
             }
 
             return reader.SkipReturnNull<TNumber>();
@@ -133,19 +130,17 @@ namespace SystemTextJsonHelpers
         {
             if (!value.HasValue)
                 writer.WriteNullValue();
-            else
-                switch ((object)value.Value) // Pattern match on boxed value for optimal Utf8JsonWriter overload selection
-                {
-                    case bool b: writer.WriteBooleanValue(b); break;
-                    case Guid g: writer.WriteStringValue(g); break;
-                    case Uri u: writer.WriteStringValue(u.OriginalString); break;
-                    case DateTime dt: writer.WriteStringValue(dt); break;
-                    case DateTimeOffset dto: writer.WriteStringValue(dto); break;
-                    case TimeSpan ts: writer.WriteStringValue(ts.ToString()); break;
-                    case DateOnly d: writer.WriteStringValue(d.ToString("O", Invariant)); break;
-                    case TimeOnly t: writer.WriteStringValue(t.ToString("O", Invariant)); break;
-                    default: writer.WriteStringValue(value.Value.ToString()); break; // enums & other structs
-                }
+            else switch ((object)value.Value)
+            {
+                case bool b: writer.WriteBooleanValue(b); break;
+                case Guid g: writer.WriteStringValue(g); break;
+                case DateTime dt: writer.WriteStringValue(dt); break;  // DateTime => ISO 8601 Round-trip ("O"/"o") => '2024-07-16T14:33:12.4570000-05:00'
+                case DateTimeOffset dto: writer.WriteStringValue(dto); break; // DateTimeOffset => ISO 8601 Round-trip ("O"/"o") => '2024-07-16T14:33:12.4570000-05:00'
+                case TimeSpan ts: writer.WriteStringValue(ts.ToString("c", Invariant)); break; // TimeSpan => '[-][d.]hh:mm:ss.fffffff'
+                case DateOnly d: writer.WriteStringValue(d.ToString("O", Invariant)); break; // DateOnly => ISO 8601 Date ("O"/"o") => '2024-07-16'
+                case TimeOnly t: writer.WriteStringValue(t.ToString("O", Invariant)); break; // TimeOnly => ISO 8601 Time ("O"/"o") => '14:33:12.4570000'
+                default: writer.WriteStringValue(value.Value.ToString()); break;
+            }
         }
 
         private static T? ParseFromStringSafely(string stringValue)
@@ -154,15 +149,14 @@ namespace SystemTextJsonHelpers
             return typeof(T) switch
             {
                 var _ when string.IsNullOrWhiteSpace(s) => null, //FIRST: Always treat empty/whitespace strings as null for all types!
-                var t when t == typeof(bool) => bool.TryParse(s, out var b) ? b.As<T>() : null,
-                var t when t == typeof(Guid) => Guid.TryParse(s, out var g) ? g.As<T>() : null,
-                var t when t == typeof(Uri) => Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out var u) ? u.As<T>() : null,
-                var t when t == typeof(DateTime) => DateTime.TryParse(s, Invariant, DateTimeStyles.RoundtripKind, out var dt) ? dt.As<T>() : null,
-                var t when t == typeof(DateTimeOffset) => DateTimeOffset.TryParse(s, Invariant, DateTimeStyles.RoundtripKind, out var dto) ? dto.As<T>() : null,
-                var t when t == typeof(TimeSpan) => TimeSpan.TryParse(s, Invariant, out var ts) ? ts.As<T>() : null,
-                var t when t == typeof(DateOnly) => DateOnly.TryParse(s, Invariant, DateTimeStyles.AllowWhiteSpaces, out var d) ? d.As<T>() : null,
-                var t when t == typeof(TimeOnly) => TimeOnly.TryParse(s, Invariant, DateTimeStyles.AllowWhiteSpaces, out var to) ? to.As<T>() : null,
-                var t when t.IsEnum => Enum.TryParse(t, s, ignoreCase: true, out var e) ? e.As<T>() : null,
+                var t when t == typeof(bool) && bool.TryParse(s, out var b) => b.As<T>(),
+                var t when t == typeof(Guid) && Guid.TryParse(s, out var g) => g.As<T>(),
+                var t when t == typeof(DateTime) && DateTime.TryParse(s, Invariant, DateTimeStyles.RoundtripKind, out var dt) => dt.As<T>(),
+                var t when t == typeof(DateTimeOffset) && DateTimeOffset.TryParse(s, Invariant, DateTimeStyles.RoundtripKind, out var dto) => dto.As<T>(),
+                var t when t == typeof(TimeSpan) && TimeSpan.TryParse(s, Invariant, out var ts) => ts.As<T>(),
+                var t when t == typeof(DateOnly) && DateOnly.TryParse(s, Invariant, DateTimeStyles.AllowWhiteSpaces, out var d) => d.As<T>(),
+                var t when t == typeof(TimeOnly) && TimeOnly.TryParse(s, Invariant, DateTimeStyles.AllowWhiteSpaces, out var to) => to.As<T>(),
+                var t when t.IsEnum && Enum.TryParse(t, s, ignoreCase: true, out var e) => e.As<T>(),
                 _ => null
             };
         }
@@ -176,6 +170,7 @@ namespace SystemTextJsonHelpers
             return null;
         }
 
-        public static T? As<T>(this object obj) => (T?)obj;
+        public static T? As<T>(this object? obj) where T: struct 
+            => obj is T result ? result : null;
     }
 }

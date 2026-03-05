@@ -59,12 +59,9 @@ namespace SystemTextJsonHelpers
 
             //Add Converters that will help provide more relaxed parsing (similar to Newtonsoft.Json)...
             var converters = options.Converters;
-            converters.Add(new JsonRelaxedDateTimeConverter());
-            converters.Add(new JsonRelaxedDateTimeOffsetConverter());
             converters.Add(new JsonRelaxedBooleanConverter());
             converters.Add(new JsonStringEnumConverter());
-            //converters.Add(new JsonRelaxedNullableIntConverter());
-            converters.Add(new RelaxedNullableConverterFactory());
+            converters.Add(new JsonRelaxedNullableConverterFactory());
 
             return options;
         }).Invoke();

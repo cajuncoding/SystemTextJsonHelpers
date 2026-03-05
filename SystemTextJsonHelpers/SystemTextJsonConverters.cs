@@ -5,19 +5,6 @@ using System.Text.Json.Serialization;
 
 namespace SystemTextJsonHelpers
 {
-    //NOTE: We use Macross.Json.Extensions to greatly simplify providing simple value converters such as this...
-    public class JsonRelaxedDateTimeConverter() : JsonDelegatedStringConverter<DateTime>(
-        value => DateTime.Parse(value),
-        value => value.ToString("s", CultureInfo.InvariantCulture)
-    );
-
-    //NOTE: We use Macross.Json.Extensions to greatly simplify providing simple value converters such as this...
-    public class JsonRelaxedDateTimeOffsetConverter() : JsonDelegatedStringConverter<DateTimeOffset>(
-        value => DateTimeOffset.Parse(value),
-        //Render our DateTimeOffset with support for Timezone but without the unnecessary 7 fractional seconds digits like "o" outputs...
-        value => value.ToString("yyyy-MM-dd'T'HH:mm:ssK", CultureInfo.InvariantCulture)
-    );
-
     /// <summary>
     /// A relaxed Boolean value converter for System.Text.Json that works with bool or string bool (e.g. 'true', 'false) case-insensitive values.
     /// Inspired and adapted from original StackOverflow source here: https://stackoverflow.com/a/75089641/7293142
