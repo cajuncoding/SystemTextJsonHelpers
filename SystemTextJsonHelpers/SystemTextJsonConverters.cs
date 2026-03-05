@@ -43,24 +43,4 @@ namespace SystemTextJsonHelpers
         public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)
             => writer.WriteBooleanValue(value);
     }
-
-    //public class JsonRelaxedNullableIntConverter : JsonConverter<int?>
-    //{
-    //    public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.TokenType switch
-    //    {
-    //        JsonTokenType.Null => null,
-    //        JsonTokenType.Number => reader.GetInt32(),
-    //        JsonTokenType.String => int.TryParse(reader.GetString(), out var parsedInt) ? parsedInt : null,
-    //        _ => null
-    //    };
-
-    //    public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
-    //    {
-    //        if (value.HasValue)
-    //            writer.WriteNumberValue(value.Value);
-    //        else
-    //            writer.WriteNullValue();
-    //    }
-    //}
-
 }

@@ -62,9 +62,9 @@ namespace SystemTextJsonHelpers
             converters.Add(new JsonRelaxedDateTimeConverter());
             converters.Add(new JsonRelaxedDateTimeOffsetConverter());
             converters.Add(new JsonRelaxedBooleanConverter());
-            //converters.Add(new JsonRelaxedNullableIntConverter());
-            converters.Add(new RelaxedNullableNumberConverterFactory());
             converters.Add(new JsonStringEnumConverter());
+            //converters.Add(new JsonRelaxedNullableIntConverter());
+            converters.Add(new RelaxedNullableConverterFactory());
 
             return options;
         }).Invoke();

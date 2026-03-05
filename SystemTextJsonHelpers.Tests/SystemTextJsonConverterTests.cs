@@ -5,7 +5,7 @@
     {
         public TestContext TestContext { get; set; }
 
-        public record BooleanStringTest(
+        public record BooleanTest(
             bool BooleanTrue,
             bool BooleanTrueString,
             bool BooleanTrueCaseInsensitive,
@@ -40,7 +40,7 @@
                 ""booleanFalseNullableString"": ""false"",
                 ""booleanFalseNullableCaseInsensitive"": ""FALsE"",
                 ""booleanFalseNullableNull"": null,
-            }".FromJsonTo<BooleanStringTest>();
+            }".FromJsonTo<BooleanTest>();
 
             Assert.IsNotNull(booleanTest);
             Assert.IsTrue(booleanTest.BooleanTrue);
@@ -60,7 +60,7 @@
             Assert.IsNull(booleanTest.BooleanFalseNullableNull);
         }
 
-        public record IntegerStringTest(
+        public record IntegerTest(
              int Integer,
              int IntegerString,
              int? IntegerNullable,
@@ -70,32 +70,6 @@
              int? IntegerNullableWhiteSpaceString,
              int? IntegerNullableInvalidString
          );
-
-        [TestMethod]
-        public void TestRelaxedNullableIntConverter()
-        {
-            //TODO: Add Use Cases for Empty String or Whitespace testing...
-            var integerTest = @"{
-                ""integer"": 123,
-                ""integerString"": ""123"",
-                ""integerNullable"": 4567,
-                ""integerNullableString"": ""4567"",
-                ""integerNullableNull"": null,
-                ""integerNullableEmptyString"" : """",
-                ""integerNullableWhiteSpaceString"" : ""     "",
-                ""integerNullableInvalidString"": ""12abe4""
-            }".FromJsonTo<IntegerStringTest>();
-
-            Assert.IsNotNull(integerTest);
-            Assert.AreEqual(123, integerTest.Integer);
-            Assert.AreEqual(123, integerTest.IntegerString);
-            Assert.AreEqual(4567, integerTest.IntegerNullable);
-            Assert.AreEqual(4567, integerTest.IntegerNullableString);
-            Assert.IsNull(integerTest.IntegerNullableNull);
-            Assert.IsNull(integerTest.IntegerNullableEmptyString);
-            Assert.IsNull(integerTest.IntegerNullableWhiteSpaceString);
-            Assert.IsNull(integerTest.IntegerNullableInvalidString);
-        }
 
         [TestMethod]
         public void TestRelaxedNullableNumberConverter()
@@ -110,7 +84,7 @@
                 ""integerNullableEmptyString"" : """",
                 ""integerNullableWhiteSpaceString"" : ""     "",
                 ""integerNullableInvalidString"": ""12abe4""
-            }".FromJsonTo<IntegerStringTest>();
+            }".FromJsonTo<IntegerTest>();
 
             Assert.IsNotNull(integerTest);
             Assert.AreEqual(123, integerTest.Integer);
@@ -121,6 +95,37 @@
             Assert.IsNull(integerTest.IntegerNullableEmptyString);
             Assert.IsNull(integerTest.IntegerNullableWhiteSpaceString);
             Assert.IsNull(integerTest.IntegerNullableInvalidString);
+        }
+
+        public record DateTimeTest(
+             DateTime DateAndTime,
+             DateTime? DateAndTimeNullableNull,
+             DateTime? DateAndTimeNullableInvalid,
+             DateTimeOffset DateAndTimeOffset,
+             DateTimeOffset? DateAndTimeOffsetNullableNull,
+             DateTimeOffset? DateAndTimeOffsetNullableInvalid
+         );
+
+        [TestMethod]
+        public void TestRelaxedDateTimeConverter()
+        {
+            var now = DateTime.Now;
+
+            //TODO: Add Use Cases for Empty String or Whitespace testing...
+            var dateTimeTest = $@"{{
+                ""dateAndTime"": ""{now:O}"",
+                ""dateAndTimeNullableNull"": null,
+                ""dateAndTimeNullableInvalid"": ""123:abcdef"",
+                ""dateAndTimeOffset"": ""{now:O}"",
+                ""dateAndTimeOffsetNullableNull"": null,
+                ""dateAndTimeOffsetNullableInvalid"": ""12:99:abcdef"",
+            }}".FromJsonTo<DateTimeTest>();
+
+            Assert.IsNotNull(dateTimeTest);
+            Assert.AreEqual(now, dateTimeTest.DateAndTime);
+            Assert.IsNull(dateTimeTest.DateAndTimeNullableNull);
+            Assert.AreEqual(now, dateTimeTest.DateAndTimeOffset);
+            Assert.IsNull(dateTimeTest.DateAndTimeOffsetNullableNull);
         }
     }
 }
