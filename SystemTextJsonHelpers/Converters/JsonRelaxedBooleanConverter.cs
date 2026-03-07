@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SystemTextJsonHelpers
+namespace SystemTextJsonHelpers.Converters
 {
     /// <summary>
     /// A relaxed Boolean value converter for System.Text.Json that works with bool or string bool (e.g. 'true', 'false) case-insensitive values.

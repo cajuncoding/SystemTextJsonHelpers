@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SystemTextJsonHelpers.Converters;
+using SystemTextJsonHelpers.Converters.Utilities;
 
 namespace SystemTextJsonHelpers
 {
     public static class Json
     {
         public const string EmptyJsonObject = "{}";
+        public const string EmptyJsonArray = "[]";
     }
 
     public static class SystemTextJsonDefaults
@@ -30,12 +33,14 @@ namespace SystemTextJsonHelpers
         /// a number of other relaxed converters to make working with non-strict Json sources much easier
         /// by providing more relaxed parsing of DateTime, DateTimeOffset, String Enums, and String Boolean values.
         /// </summary>
-        public static void ConfigureRelaxedWebDefaults()
-            => ConfigureDefaults(RelaxedWebDefaults);
+        public static void ConfigureRelaxedWebDefaults(Action<JsonSerializerOptions>? configureAction = null)
+            => ConfigureDefaultsInternal(configureAction, CreateRelaxedJsonSerializerOptions());
 
         public static void ConfigureDefaults(JsonSerializerDefaults defaultsEnum, Action<JsonSerializerOptions>? configureAction)
+            => ConfigureDefaultsInternal(configureAction, new JsonSerializerOptions(defaultsEnum));
+
+        public static void ConfigureDefaultsInternal(Action<JsonSerializerOptions>? configureAction, JsonSerializerOptions jsonSerializerOptions)
         {
-            var jsonSerializerOptions = new JsonSerializerOptions(defaultsEnum);
             configureAction?.Invoke(jsonSerializerOptions);
             ConfigureDefaults(jsonSerializerOptions);
         }
@@ -46,24 +51,46 @@ namespace SystemTextJsonHelpers
             DefaultSerializerOptions = jsonSerializerOptions;
         }
 
-        public static readonly JsonSerializerOptions RelaxedWebDefaults = new Func<JsonSerializerOptions>(() =>
+        public static JsonSerializerOptions CreateRelaxedJsonSerializerOptions(
+            bool allowStringEnums = true,
+            JsonNamingPolicy? enumNamingPolicy = null,
+            string enumFlagsStringOutputSeparator = JsonRelaxedConverterOptions.DefaultEnumFlagsStringOutputSeparator,
+            bool allowNumericEnums = true,
+            EnumWriteStyle enumJsonWriteStyle = EnumWriteStyle.StringOutput,
+            bool allowReadingBooleanValuesFromStrings = true,
+            bool allowWritingNullValues = true,
+            bool allowNumericParsingThousandsSeparators = true
+        )
         {
-            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            var jsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 PropertyNameCaseInsensitive = true,
                 AllowTrailingCommas = true,
-                //DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals
+                DefaultIgnoreCondition = allowWritingNullValues ? JsonIgnoreCondition.Never : JsonIgnoreCondition.WhenWritingNull,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,                
             };
 
-            //Add Converters that will help provide more relaxed parsing (similar to Newtonsoft.Json)...
-            var converters = options.Converters;
-            converters.Add(new JsonRelaxedBooleanConverter()); //REQUIRED to handle relaxed parsing of non-Nullable boolean values!
-            converters.Add(new JsonStringEnumMemberConverter()); //Macross.JsonStringEnumMemberConverter Provides enhanced parsing of string Enums and supports [EnumMember(Value = "...")] & [JsonPropertyName("...")] annotations!
-            converters.Add(new JsonRelaxedNullableConverterFactory()); //REQUIRED to handle relaxed parsing of Nullable values!
+            var relaxedConverterOptions = new JsonRelaxedConverterOptions(
+                allowNumericEnumValues: allowNumericEnums,
+                enumJsonWriteStyle: enumJsonWriteStyle,
+                enumNamingPolicy: enumNamingPolicy,
+                enumFlagsStringOutputSeparator: enumFlagsStringOutputSeparator,
+                allowNumericParsingThousandsSeparators: allowNumericParsingThousandsSeparators
+            );
 
-            return options;
-        }).Invoke();
+            //Add Converters that will help provide more relaxed parsing (similar to Newtonsoft.Json)...
+            var converters = jsonSerializerOptions.Converters;
+            if(allowReadingBooleanValuesFromStrings)
+                converters.Add(new JsonRelaxedBooleanConverter()); //REQUIRED to handle relaxed parsing of non-Nullable boolean values!
+            
+            if(allowStringEnums)
+                converters.Add(new JsonRelaxedEnumConverterFactory(relaxedConverterOptions));
+
+            //REQUIRED to handle relaxed parsing of Nullable numeric and other supported values!
+            converters.Add(new JsonRelaxedNullableConverterFactory(relaxedConverterOptions));
+
+            return jsonSerializerOptions;
+        }
     }
 }
