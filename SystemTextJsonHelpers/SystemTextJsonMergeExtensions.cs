@@ -74,10 +74,20 @@ namespace SystemTextJsonHelpers
         /// <param name="mergeJsonNodeParams"></param>
         /// <returns></returns>
         public static JsonNode? MergeMany(this JsonNode firstJsonNode, params JsonNode?[] mergeJsonNodeParams)
+            => MergeMany(firstJsonNode, mergeIfAlreadyExists: true, mergeJsonNodeParams);
+
+
+        /// <summary>
+        /// Mergees all the specified Json Nodes into the base JsonNode for which this method is called.
+        /// </summary>
+        /// <param name="firstJsonNode"></param>
+        /// <param name="mergeJsonNodeParams"></param>
+        /// <returns></returns>
+        public static JsonNode? MergeMany(this JsonNode firstJsonNode, bool mergeIfAlreadyExists, params JsonNode?[] mergeJsonNodeParams)
         {
             JsonNode? resultJsonNode = null;
             foreach (var mergeJsonNode in mergeJsonNodeParams)
-                resultJsonNode = (resultJsonNode ?? firstJsonNode).Merge(mergeJsonNode);
+                resultJsonNode = (resultJsonNode ?? firstJsonNode).Merge(mergeJsonNode, mergeIfAlreadyExists);
 
             return resultJsonNode;
         }
