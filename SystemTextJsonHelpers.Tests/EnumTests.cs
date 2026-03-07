@@ -222,15 +222,23 @@ namespace SystemTextJsonHelpers.Tests
         }
 
         [TestMethod]
-        public void TestFlagsWritingCustomizedSeparator()
+        public void TestFlagsReadingAndWritingWithCustomizedSeparator()
         {
             var options = SystemTextJsonDefaults.CreateRelaxedJsonSerializerOptions(
-                enumFlagsStringOutputSeparator: " :: "
+                enumFlagsStringOutputSeparator: "::"
             );
 
             // Zero value should use the defined alias "none"
             var json = (AccessRights.Read | AccessRights.Write | AccessRights.Delete).ToJson(options);
-            StringAssert.Contains(json, "\"ReadAndWrite :: delete-access\"");
+            StringAssert.Contains(json, "\"ReadAndWrite::delete-access\"");
+
+            var rights = json.FromJsonTo<AccessRights?>(options);
+            Assert.AreEqual(AccessRights.ReadAndWrite | AccessRights.Delete, rights);
+
+            //Test Mixed separators on read with the customized separator and default separators
+            var mixedRights = "\"ReadAndWrite :: delete-access, execute | none\"".FromJsonTo<AccessRights?>(options);
+            //NOTE: "none" should be ignored since it doesn't add any bits
+            Assert.AreEqual(AccessRights.ReadAndWrite | AccessRights.Delete | AccessRights.Execute, mixedRights);
         }
 
         [TestMethod]

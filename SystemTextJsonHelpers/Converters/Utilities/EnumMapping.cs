@@ -9,6 +9,8 @@ namespace SystemTextJsonHelpers.Converters.Utilities
 {
     internal sealed class EnumMapping
     {
+        private const ulong EmptyFlag = 0UL;
+
         // Cache per (enumType, namingPolicy) — policy compared by reference
         private static readonly ConcurrentDictionary<(Type enumType, JsonNamingPolicy? policy), Lazy<EnumMapping>> _mappingCache = new();
 
@@ -19,7 +21,6 @@ namespace SystemTextJsonHelpers.Converters.Utilities
         private readonly ulong[] _enumMasks;  // masks aligned to _definedValues
         private readonly ulong _allKnownBits;
         private readonly string _zeroPreferredName;
-        private static readonly char[] _flagSeparatorChars = [ ',', '|' ];
 
         public Type EnumType { get; }
         public JsonNamingPolicy? NamingPolicy { get; }
@@ -124,27 +125,95 @@ namespace SystemTextJsonHelpers.Converters.Utilities
             ? preferredName 
             : enumValue?.ToString() ?? throw new ArgumentNullException(nameof(enumValue));
 
-        public bool TryParseFlagsFromString(string text, out object? enumValue)
+        //public bool TryParseFlagsFromString(string text, out object? enumValue, string? flagsSeparator = null)
+        //{
+        //    enumValue = null;
+        //    if (!IsFlags) return false;
+
+        //    ulong aggregateEnum = EmptyFlag;
+        //    foreach (var enumPart in text.Split(_flagSeparatorChars, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        //    {
+        //        if (_readMap.TryGetValue(enumPart, out var partBoxed))
+        //            aggregateEnum |= Convert.ToUInt64(partBoxed);
+        //        else if (Enum.TryParse(EnumType, enumPart, ignoreCase: true, out var parsedPart))
+        //            aggregateEnum |= Convert.ToUInt64(parsedPart);
+        //        else //READ FAIL - unknown token encountered
+        //            return false;
+        //    }
+
+        //    enumValue = Enum.ToObject(EnumType, aggregateEnum);
+        //    return true;
+        //}
+
+        /// <summary>
+        /// To support custom configuration of Enum separator, as well as default values such as ',', & '|' we have to manually parse
+        /// but we can still optimize by avoiding most allocations (e.g. for the split and trim operations), and only allocating for the
+        /// final token if it is valid (vs. doing multiple allocations per token for split/trim).
+        /// </summary>
+        public bool TryParseFlags(string text, out object? enumValue, string? flagsSeparator = null)
         {
             enumValue = null;
             if (!IsFlags) return false;
 
-            ulong aggregateEnum = 0UL;
-            foreach (var enumPart in text.Split(_flagSeparatorChars, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            ulong aggregateEnum = EmptyFlag;
+
+            ReadOnlySpan<char> span = text.AsSpan();
+            ReadOnlySpan<char> commaSep = ",".AsSpan();
+            ReadOnlySpan<char> pipeSep = "|".AsSpan();
+            ReadOnlySpan<char> customSep = flagsSeparator is { Length: > 0 } ? flagsSeparator.AsSpan() : ReadOnlySpan<char>.Empty;
+
+            static int ComputeRelativePostion(int pos, int nextIndex) => nextIndex < 0 ? -1 : pos + nextIndex;
+            static int FindNearestSeparatorIndex(int a, int b) => a < 0 ? b : (b < 0 ? a : Math.Min(a, b));
+
+            int i = 0;
+            while (i <= span.Length)
             {
-                if (_readMap.TryGetValue(enumPart, out var partBoxed))
-                    aggregateEnum |= Convert.ToUInt64(partBoxed);
-                else if (Enum.TryParse(EnumType, enumPart, ignoreCase: true, out var parsedPart))
-                    aggregateEnum |= Convert.ToUInt64(parsedPart);
-                else //READ FAIL - unknown token encountered
-                    return false;
+                var slice = span[i..];
+
+                //Find next occurrence for each separator relative to current position
+                int nextCustomSepIndex = customSep.IsEmpty ? -1 : slice.IndexOf(customSep);
+                int nextCommaIndex = slice.IndexOf(commaSep);
+                int nextPipeIndex = slice.IndexOf(pipeSep);
+
+                //Convert to absolute positions
+                int customSepPosition = ComputeRelativePostion(i, nextCustomSepIndex);
+                int commaPosition = ComputeRelativePostion(i, nextCommaIndex);
+                int pipePosition = ComputeRelativePostion(i, nextPipeIndex);
+
+                //Nearest next separator among custom / ',' / '|'
+                int nextSeparatorIndex = FindNearestSeparatorIndex(customSepPosition, FindNearestSeparatorIndex(commaPosition, pipePosition));
+
+                //token => TrimEntries behavior; skip empty tokens (RemoveEmptyEntries)
+                ReadOnlySpan<char> token = nextSeparatorIndex >= 0 
+                    ? span.Slice(i, nextSeparatorIndex - i).Trim()
+                    : span[i..].Trim();
+
+                if (!token.IsEmpty)
+                {
+                    var enumPart = token.ToString(); //One allocation per non-empty token
+                    if (_readMap.TryGetValue(enumPart, out var partBoxed))
+                        aggregateEnum |= Convert.ToUInt64(partBoxed);
+                    else if (Enum.TryParse(EnumType, enumPart, ignoreCase: true, out var parsedPart))
+                        aggregateEnum |= Convert.ToUInt64(parsedPart);
+                    else
+                        return false; //PARSE FAIL: unknown fragment
+                }
+
+                if (nextSeparatorIndex < 0) break;
+
+                //Advance past whichever separator matched (respect custom length)
+                i = nextSeparatorIndex switch
+                {
+                    var pos when !customSep.IsEmpty && pos == customSepPosition => pos + customSep.Length,
+                    var pos when pos == commaPosition => pos + commaSep.Length,
+                    var pos when pos == pipePosition => pos + pipeSep.Length,
+                    _ => span.Length //Should not happen, but just in case, move to end to exit loop
+                };
             }
 
             enumValue = Enum.ToObject(EnumType, aggregateEnum);
             return true;
         }
-
-        private const ulong EmptyFlag = 0UL;
 
         public bool TryFormatFlags(object enumValue, out string? formattedResult, string separator = JsonRelaxedConverterOptions.DefaultEnumFlagsStringOutputSeparator)
         {

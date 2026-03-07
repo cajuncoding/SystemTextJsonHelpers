@@ -51,7 +51,7 @@ namespace SystemTextJsonHelpers.Converters
             enumResult = reader.TokenType switch
             {
                 // FLAGS strings like "Read, Write" or "read-alias | WRITE-ALIAS"
-                JsonTokenType.String when _enumMapping.IsFlags && _enumMapping.TryParseFlagsFromString(reader.GetString()!, out var flags) => flags.As<TEnum>(),
+                JsonTokenType.String when _enumMapping.IsFlags && _enumMapping.TryParseFlags(reader.GetString()!, out var flags, Options.EnumFlagsStringOutputSeparator) => flags.As<TEnum>(),
                 // Single token: alias/policy/name
                 JsonTokenType.String when _enumMapping.TryGetValue(reader.GetString(), out var result) => result.As<TEnum>(),
                 // Numeric (signed underlying)
