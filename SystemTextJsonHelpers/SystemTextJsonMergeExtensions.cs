@@ -11,7 +11,7 @@ namespace SystemTextJsonHelpers
         /// It is null safe and can be easily used with null-check & null coalesce operators for fluent calls.
         /// NOTE: JsonNodes are context aware and track their parent relationships therefore to merge the values both JsonNode objects
         ///         specified are mutated. The Base is mutated with new data while the source is mutated to remove reverences to all
-        ///         fields so that they can be added to the base.
+        ///         fields so that they can be added to the base. If you need to avoid this you can call DeepClone() prior to merging!
         ///
         /// Source taken directly from the open-source Gist here:
         /// https://gist.github.com/cajuncoding/bf78bdcf790782090d231590cbc2438f
@@ -65,6 +65,21 @@ namespace SystemTextJsonHelpers
             }
 
             return jsonBase;
+        }
+
+        /// <summary>
+        /// Mergees all the specified Json Nodes into the base JsonNode for which this method is called.
+        /// </summary>
+        /// <param name="firstJsonNode"></param>
+        /// <param name="mergeJsonNodeParams"></param>
+        /// <returns></returns>
+        public static JsonNode? MergeMany(this JsonNode firstJsonNode, params JsonNode?[] mergeJsonNodeParams)
+        {
+            JsonNode? resultJsonNode = null;
+            foreach (var mergeJsonNode in mergeJsonNodeParams)
+                resultJsonNode = (resultJsonNode ?? firstJsonNode).Merge(mergeJsonNode);
+
+            return resultJsonNode;
         }
 
         /// <summary>
