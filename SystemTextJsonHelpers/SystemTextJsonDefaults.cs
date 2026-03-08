@@ -6,7 +6,7 @@ using SystemTextJsonHelpers.Converters.Utilities;
 
 namespace SystemTextJsonHelpers
 {
-    public static class Json
+    public static class JsonConstants
     {
         public const string EmptyJsonObject = "{}";
         public const string EmptyJsonArray = "[]";
@@ -81,13 +81,19 @@ namespace SystemTextJsonHelpers
 
             //Add Converters that will help provide more relaxed parsing (similar to Newtonsoft.Json)...
             var converters = jsonSerializerOptions.Converters;
-            if(allowReadingBooleanValuesFromStrings)
-                converters.Add(new JsonRelaxedBooleanConverter()); //REQUIRED to handle relaxed parsing of non-Nullable boolean values!
-            
-            if(allowStringEnums)
+
+            //Optionally handle relaxed parsing of non-Nullable boolean values!
+            if (allowReadingBooleanValuesFromStrings)
+                converters.Add(new JsonRelaxedBooleanConverter());
+
+            //Optionally handle relaxed parsing of Enums with full support for case-insensitive parsing
+            //  and annotations (e.g. [EnumMember(Name="")] & [JsonPropertyName("")])...
+            if (allowStringEnums)
                 converters.Add(new JsonRelaxedEnumConverterFactory(relaxedConverterOptions));
 
             //REQUIRED to handle relaxed parsing of Nullable numeric and other supported values!
+            //NOTE: Configuraiton options are provided to the Nullable converter factory, so that it can
+            //  tailor the relaxed parsing rules as specified...
             converters.Add(new JsonRelaxedNullableConverterFactory(relaxedConverterOptions));
 
             return jsonSerializerOptions;
