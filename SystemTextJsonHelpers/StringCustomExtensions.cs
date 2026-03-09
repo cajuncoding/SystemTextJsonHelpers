@@ -16,7 +16,6 @@
             return 
                 (text.StartsWith("{") && text.EndsWith("}")) //For object
                 || (text.StartsWith("[") && text.EndsWith("]")); //For array
-
         }
 
         // Single source of truth for all grouping/separator characters we strip.

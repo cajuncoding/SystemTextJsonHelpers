@@ -27,3 +27,17 @@ then I do love-me-some-coffee!*
 <img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174">
 </a>
 
+## Release Notes
+### v1.1
+- Added a number of very helpful convenience methods for processing JsonObject, JsonNode, JsonValue.
+- These extension methods make it easier to safely retrieve values, enumerate properties, etc. without exceptions
+- These convenience methods include support for the Globally configured SystemTextJsonDefaults.DefaultSerializerOptions (e.g. relaxed parsing, custom converters, etc.)
+for consistent handling of JSON across the application.
+
+### v1.0
+- Initial release of SystemTextJsonHelpers package.
+- Supports global configuration of System.Text.Json via `SystemTextJsonDefaults.ConfigureDefaults()` static class configuration method.
+- Supports object extensions for common json operations such as `obj.ToJson()` and `text.FromJson&lt;T&gt;()` with relaxed parsing and handling of null values (as configured in `SystemTextJsonDefaults`).
+- Supports advanced custom converters for handling of common scenarios such as relaxed parsing of numbers, dates, enums, and more.
+- Supports string enum relaxed handling that can handle string values, numeric values, and flags for enums as well as case-insensitive matching, null handling, and annotations (e.g. [EnumMember(Name="")] &amp; [JsonPropertyName("")]).
+- Supports relaxed/safe parsing and handling of JSON via nullable types (e.g. int?, bool?, DateTime?, etc.) whereby null is returned on parsing errors instead of throwing exceptions.
