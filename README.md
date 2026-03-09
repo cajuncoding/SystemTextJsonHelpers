@@ -28,6 +28,11 @@ then I do love-me-some-coffee!*
 </a>
 
 ## Release Notes
+### v1.2
+- Added support for new custom attributes to enable multi-mapping of Enum values via [JsonStringEnumMemberMultiMap].
+- Added support to now explicitly define the primary mapping for output/writing of json via [JsonPrimaryStringEnumMemberMultiMap]; which also serves as a read mapping.
+- Added new targeting for .Net 9+ and enabled support for the new [JsonStringEnumMemberName] attribute that is now built-in/default with .Net 9+.
+
 ### v1.1
 - Added a number of very helpful convenience methods for processing JsonObject, JsonNode, JsonValue.
 - These extension methods make it easier to safely retrieve values, enumerate properties, etc. without exceptions

@@ -14,12 +14,32 @@ namespace SystemTextJsonHelpers.Tests
         public enum Color
         {
             Red,
+
             [JsonPropertyName("green-color")]
+#if NET9_0_OR_GREATER
+            //Test Support for .NET9.0+ JsonStringEnumMemberNameAttribute which allows defining aliases now with built-in/default System.Text.Json.
+            [JsonStringEnumMemberName("Green-Net9Plus")]
+#endif
+            [EnumMember(Value = "sea_green")]
             Green,
-            [JsonPropertyName("MY-BLUE")]
+
+            [JsonPropertyName("BabyBlue")]
             [EnumMember(Value = "blue-color")]
-            Blue
+#if NET9_0_OR_GREATER
+            //Test Support for .NET9.0+ JsonStringEnumMemberNameAttribute which allows defining aliases now with built-in/default System.Text.Json.
+            [JsonStringEnumMemberName("Blue-Net9Plus")]
+#endif
+            [JsonPrimaryStringEnumMemberMultiMap("MY-BLUE")] //Test Primary declaration overrides Ordinal Position when defined!
+            [JsonStringEnumMemberMultiMap("SkyBlue")] // Test multiple aliases with EnumMemberMultiMapAttribute
+            [JsonStringEnumMemberMultiMap("Cyan")] // Test multiple aliases with EnumMemberMultiMapAttribute
+            Blue,
+
+            [EnumMember(Value = "orange-color")]
+            [JsonStringEnumMemberMultiMap("BurntOrange")] // Test multiple aliases with EnumMemberMultiMapAttribute
+            [JsonStringEnumMemberMultiMap("TangerineOrange")] // Test multiple aliases with EnumMemberMultiMapAttribute
+            Orange
         }
+
         public enum Status
         {
             Draft = 1,
@@ -154,13 +174,62 @@ namespace SystemTextJsonHelpers.Tests
                 enumNamingPolicy: JsonNamingPolicy.CamelCase
             );
 
-            var json = Color.Blue.ToJson(options);
+            var blueJson = Color.Blue.ToJson(options);
+            var greenJson = Color.Green.ToJson(options);
 
-            // Should NOT be "blue" (camelCase)
-            Assert.IsFalse(json.Contains("\"blue\""), "Naming policy output unexpectedly replaced alias.");
+            // Should NOT be "blue" (camelCase) or "green" (camelCase) since aliases should be preferred over naming policy transformations
+            Assert.IsFalse(blueJson.Contains("\"blue\""), "Naming policy output unexpectedly replaced alias.");
+            Assert.IsFalse(blueJson.Contains("\"green\""), "Naming policy output unexpectedly replaced alias.");
 
-            // Should be the alias
-            StringAssert.Contains(json, "\"MY-BLUE\"");
+            // Should be the Primary alias as it is defined for Blue!
+            StringAssert.Contains(blueJson, "\"MY-BLUE\"");
+            // Should be the Ordinal Alias as it is defined for Green!
+
+#if NET9_0_OR_GREATER
+            StringAssert.Contains(greenJson, "\"Green-Net9Plus\"");
+#else
+            StringAssert.Contains(greenJson, "\"green-color\"");
+#endif
+        }
+
+
+        [TestMethod]
+        public void TestEnumAliasMultMapNamingDefintionsAndPrioritizationForWriting()
+        {
+            var options = SystemTextJsonDefaults.CreateRelaxedJsonSerializerOptions(
+                enumNamingPolicy: JsonNamingPolicy.CamelCase
+            );
+
+            Assert.AreEqual(Color.Blue, @"""Blue""".FromJsonTo<Color?>(options));
+            Assert.AreEqual(Color.Blue, @"""blue-color""".FromJsonTo<Color?>(options));
+            Assert.AreEqual(Color.Blue, @"""BabyBlue""".FromJsonTo<Color?>(options));
+            Assert.AreEqual(Color.Blue, @"""cyan""".FromJsonTo<Color?>(options));
+            Assert.AreEqual(Color.Blue, @"""SkyBlue""".FromJsonTo<Color?>(options));
+            Assert.AreEqual(Color.Blue, @"""my-BLue""".FromJsonTo<Color?>(options));
+
+#if NET9_0_OR_GREATER
+            //Test Support for .NET9.0+ JsonStringEnumMemberNameAttribute which allows defining aliases now with built-in/default System.Text.Json.
+            Assert.AreEqual(Color.Blue, @"""Blue-Net9Plus""".FromJsonTo<Color?>(options));
+            Assert.AreEqual(Color.Green, @"""Green-Net9Plus""".FromJsonTo<Color?>(options));
+#endif
+
+            var blueJson = @"""cyan""".FromJsonTo<Color?>(options).ToJson(options);
+            // Should be the Primary alias as it is defined for Blue!
+            StringAssert.Contains(blueJson, "\"MY-BLUE\"");
+
+            var orangeJson = @"""tangerineOrange""".FromJsonTo<Color?>(options).ToJson(options);
+            // Should be the First Declared (ordinal position) alias as no primary attribute is defined!
+            StringAssert.Contains(orangeJson, "\"orange-color\"");
+
+#if NET9_0_OR_GREATER
+            //Test Support for .NET9.0+ JsonStringEnumMemberNameAttribute which allows defining aliases now with built-in/default System.Text.Json.
+            var blueJsonNet9Plus = @"""cyan""".FromJsonTo<Color?>(options).ToJson(options);
+            var greenJsonNet9Plus = @"""sea_green""".FromJsonTo<Color?>(options).ToJson(options);
+            // Should be the MultiMap Primary alias as it is defined for Blue!
+            StringAssert.Contains(blueJsonNet9Plus, "\"MY-BLUE\"");
+            // Should be the JsonStringEnumMemberNameAttribute alias as it is the only Priority annotation defined for Green...
+            StringAssert.Contains(greenJsonNet9Plus, "\"Green-Net9Plus\"");
+#endif
         }
 
         [TestMethod]

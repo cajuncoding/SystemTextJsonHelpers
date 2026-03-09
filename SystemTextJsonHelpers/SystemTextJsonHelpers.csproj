@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
     <RootNamespace>SystemTextJsonHelpers</RootNamespace>
-    <Version>1.1</Version>
+    <Version>1.2</Version>
     <Authors>BBernard / CajunCoding</Authors>
     <Copyright>Copyright © 2025</Copyright>
     <Description>
@@ -17,12 +17,15 @@
     <PackageTags>system text json systemtextjson json newtonsoft newtonsoftjson converter merge relaxed strict parsing systemtextjsondefaults global configuration</PackageTags>
     <PackageReleaseNotes>
       Release Notes:
+      - Added support for new custom attributes to enable multi-mapping of Enum values via [JsonStringEnumMemberMultiMap].
+      - Added support to now explicitly define the primary mapping for output/writing of json via [JsonPrimaryStringEnumMemberMultiMap]; which also serves as a read mapping.
+      - Added new targeting for .Net 9+ and enabled support for the new [JsonStringEnumMemberName] attribute that is now built-in/default with .Net 9+.
+      
+      Prior Release Notes:
       - Added a number of very helpful convenience methods for processing JsonObject, JsonNode, JsonValue.
       - These extension methods make it easier to safely retrieve values, enumerate properties, etc. without exceptions
       - These convenience methods include support for the Globally configured SystemTextJsonDefaults.DefaultSerializerOptions (e.g. relaxed parsing, custom converters, etc.)
       for consistent handling of JSON across the application.
-
-      Prior Release Notes:
       - Initial release of SystemTextJsonHelpers package.
       - Supports global configuration of System.Text.Json via `SystemTextJsonDefaults.ConfigureDefaults()` static class configuration method.
       - Supports object extensions for common json operations such as `obj.ToJson()` and `text.FromJson&lt;T&gt;()` with relaxed parsing and handling of null values (as configured in `SystemTextJsonDefaults`).

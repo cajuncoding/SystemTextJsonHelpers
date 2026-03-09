@@ -26,6 +26,12 @@ namespace SystemTextJsonHelpers.Converters.Utilities
         public JsonNamingPolicy? NamingPolicy { get; }
         public bool IsFlags { get; }
 
+        private enum AliasPriority : byte
+        {
+            None = 0,
+            DefaultPriority = 1,
+            MultiMapPriority = 2
+        }
 
         private EnumMapping(Type enumType, JsonNamingPolicy? namingPolicy)
         {
@@ -50,14 +56,24 @@ namespace SystemTextJsonHelpers.Converters.Utilities
 
                 // Gather supported annotations (preserve declaration order)
                 var annotationAliases = f.GetCustomAttributes(inherit: true)
-                    .Select(a => a switch
+                    .Select(attr =>
                     {
-                        EnumMemberAttribute enumMemberAttr => enumMemberAttr.Value,
-                        JsonPropertyNameAttribute jsonPropAttr => jsonPropAttr.Name,
-                        _ => null
+                        (string? name, AliasPriority priority) = attr switch
+                        {
+                            EnumMemberAttribute enumMemberAttr => (enumMemberAttr.Value, AliasPriority.None),
+                            JsonPropertyNameAttribute jsonPropAttr => (jsonPropAttr.Name, AliasPriority.None),
+#if NET9_0_OR_GREATER
+                            JsonStringEnumMemberNameAttribute jsonStringEnumMemberNameAttr => (jsonStringEnumMemberNameAttr.Name, AliasPriority.DefaultPriority),
+#endif
+                            JsonStringEnumMemberMultiMapAttribute multiMapAttr => (multiMapAttr.Name, AliasPriority.None),
+                            JsonPrimaryStringEnumMemberMultiMapAttribute primaryMultiMapAttr => (primaryMultiMapAttr.Name, AliasPriority.MultiMapPriority),
+                            _ => (null, AliasPriority.None)
+                        };
+
+                        return new { Name = name, Priority = priority };
                     })
-                    .Where(n => !string.IsNullOrWhiteSpace(n))
-                    .ToImmutableArray();
+                    .Where(r => !string.IsNullOrWhiteSpace(r.Name))
+                    .ToArray();
 
                 if (annotationAliases.Length == 0)
                 {
@@ -74,11 +90,22 @@ namespace SystemTextJsonHelpers.Converters.Utilities
                 else
                 {
                     //READ: all aliases are accepted as-is (policy is NOT applied to aliases)
-                    foreach (var alias in annotationAliases)
-                        _readMap[alias!] = enumValue;
+                    //NOTE: Ensure we only map distinct values to minimize risks of collisions, minimize memory footprint, etc...
+                    foreach (var aliasName in annotationAliases.Select(r => r.Name).Distinct())
+                        _readMap[aliasName!] = enumValue;
 
-                    //WRITE: prefer the FIRST declared alias exactly as defined
-                    _writeMap[enumValue] = annotationAliases[0]!;
+                    //WRITE: prefer the FIRST alias that is flagged as Primary and fallback to the first declared (ordinal)
+                    //  alias exactly as defined if no primary exists.
+                    _writeMap[enumValue] = (
+                        //Our custom attribute has our highest priority if utilized...
+                        annotationAliases.FirstOrDefault(a => a.Priority is AliasPriority.MultiMapPriority)
+#if NET9_0_OR_GREATER
+                        //Otherwise in .NET 9+ we prioritize the default/built-in JsonStringEnumMemberNameAttribute with a secondary priority...
+                        ?? annotationAliases.FirstOrDefault(a => a.Priority is AliasPriority.DefaultPriority)
+#endif
+                        //Our final fallback is to use the first declared alias (ordinally sorted by Attribute position) as the Primary...
+                        ?? annotationAliases[0]
+                    ).Name!;
                 }
             }
 
