@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
     <RootNamespace>SystemTextJsonHelpers</RootNamespace>
-    <Version>1.2</Version>
+    <Version>1.3</Version>
     <Authors>BBernard / CajunCoding</Authors>
     <Copyright>Copyright © 2025</Copyright>
     <Description>
@@ -17,11 +17,15 @@
     <PackageTags>system text json systemtextjson json newtonsoft newtonsoftjson converter merge relaxed strict parsing systemtextjsondefaults global configuration</PackageTags>
     <PackageReleaseNotes>
       Release Notes:
+      - Add support for Relaxed Date and Time parsing (when non-nullable) which delegates the the default Parse() method for DateTime, DateTimeOffset, DateOnly, &amp; TimeOnly.
+      - Added a BaseJsonStringDelegateConverter&lt;T&gt; (inspired by the Macross.Json.Extensions library) for easier conversion of string based values.
+      - Greatly improved configurable options for string outputs of formatted items like DateTime, DateTimeOffset, Numbers, etc.
+      - Options now include support for custom format strings, and overriding the culture info (Invariant is default), for better control over the output formatting of these types when serialized to JSON.
+
+      Prior Release Notes:
       - Added support for new custom attributes to enable multi-mapping of Enum values via [JsonStringEnumMemberMultiMap].
       - Added support to now explicitly define the primary mapping for output/writing of json via [JsonPrimaryStringEnumMemberMultiMap]; which also serves as a read mapping.
       - Added new targeting for .Net 9+ and enabled support for the new [JsonStringEnumMemberName] attribute that is now built-in/default with .Net 9+.
-      
-      Prior Release Notes:
       - Added a number of very helpful convenience methods for processing JsonObject, JsonNode, JsonValue.
       - These extension methods make it easier to safely retrieve values, enumerate properties, etc. without exceptions
       - These convenience methods include support for the Globally configured SystemTextJsonDefaults.DefaultSerializerOptions (e.g. relaxed parsing, custom converters, etc.)

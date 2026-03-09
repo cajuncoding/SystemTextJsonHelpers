@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using SystemTextJsonHelpers.Converters;
@@ -59,7 +60,15 @@ namespace SystemTextJsonHelpers
             EnumWriteStyle enumJsonWriteStyle = EnumWriteStyle.StringOutput,
             bool allowReadingBooleanValuesFromStrings = true,
             bool allowWritingNullValues = true,
-            bool allowNumericParsingThousandsSeparators = true
+            bool allowNumericParsingThousandsSeparators = true,
+            string numberFormatString = "G", // General format specifier => '123456789.0123456789'
+            bool allowRelaxedDateAndTimeParsing = true,
+            string dateTimeFormatString = "O", // ISO 8601 Round-trip ("O"/"o") => '2024-07-16T14:33:12.4570000-05:00'
+            string dateTimeOffsetFormatString = "O", // ISO 8601 Round-trip ("O"/"o") => '2024-07-16T14:33:12.4570000-05:00'
+            string dateOnlyFormatString = "O", // ISO 8601 Date ("O"/"o") => '2024-07-16'
+            string timeOnlyFormatString = "O", // ISO 8601 Time ("O"/"o") => '14:33:12.4570000'
+            string timeSpanFormatString = "c", // TimeSpan => '[-][d.]hh:mm:ss.fffffff',
+            CultureInfo? cultureInfo = null
         )
         {
             var jsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -76,7 +85,13 @@ namespace SystemTextJsonHelpers
                 enumJsonWriteStyle: enumJsonWriteStyle,
                 enumNamingPolicy: enumNamingPolicy,
                 enumFlagsStringOutputSeparator: enumFlagsStringOutputSeparator,
-                allowNumericParsingThousandsSeparators: allowNumericParsingThousandsSeparators
+                allowNumericParsingThousandsSeparators: allowNumericParsingThousandsSeparators,
+                numberFormatString: numberFormatString,
+                dateTimeFormatString: dateTimeFormatString,
+                dateTimeOffsetFormatString: dateTimeOffsetFormatString,
+                dateOnlyFormatString: dateOnlyFormatString,
+                timeOnlyFormatString: timeOnlyFormatString,
+                timeSpanFormatString: timeSpanFormatString
             );
 
             //Add Converters that will help provide more relaxed parsing (similar to Newtonsoft.Json)...
@@ -85,6 +100,14 @@ namespace SystemTextJsonHelpers
             //Optionally handle relaxed parsing of non-Nullable boolean values!
             if (allowReadingBooleanValuesFromStrings)
                 converters.Add(new JsonRelaxedBooleanConverter());
+
+            if(allowRelaxedDateAndTimeParsing)
+            {
+                converters.Add(new JsonRelaxedDateTimeConverter(relaxedConverterOptions));
+                converters.Add(new JsonRelaxedDateTimeOffsetConverter(relaxedConverterOptions));
+                converters.Add(new JsonRelaxedDateOnlyConverter(relaxedConverterOptions));
+                converters.Add(new JsonRelaxedTimeOnlyConverter(relaxedConverterOptions));
+            }
 
             //Optionally handle relaxed parsing of Enums with full support for case-insensitive parsing
             //  and annotations (e.g. [EnumMember(Name="")] & [JsonPropertyName("")])...

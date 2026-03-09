@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 using SystemTextJsonHelpers.Converters.Utilities;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Runtime.CompilerServices;
 
 namespace SystemTextJsonHelpers.Converters
 {
@@ -15,8 +16,6 @@ namespace SystemTextJsonHelpers.Converters
     public sealed class JsonRelaxedNullableNumberConverter<TNumber>(JsonRelaxedConverterOptions? options = null) : JsonConverter<TNumber?>
         where TNumber : struct, INumber<TNumber>, IParsable<TNumber>
     {
-        private static readonly IFormatProvider Invariant = CultureInfo.InvariantCulture;
-
         public JsonRelaxedConverterOptions Options { get; } = options ?? JsonRelaxedConverterOptions.Default;
 
         private static bool IsSignedIntegral(Type t)
@@ -69,7 +68,7 @@ namespace SystemTextJsonHelpers.Converters
                     //If ThousandsSeparators are allowed then we try to process it with fallback to manual cleaning (if absolutely necessary)...
                     var s when Options.AllowNumericParsingThousandsSeparators => TryParseRelaxedWithThousandsSeparators(s, out var parsedValue) ? parsedValue: null,
                     //Otherwise parse with normal invariant parsing expecting no formatting characters (e.g. commas).
-                    var s when TNumber.TryParse(s, Invariant, out var parsedNumber) => parsedNumber,
+                    var s when TNumber.TryParse(s, Options.CultureInfo, out var parsedNumber) => parsedNumber,
                     _ => null
                 };
             }
@@ -80,7 +79,7 @@ namespace SystemTextJsonHelpers.Converters
         public override void Write(Utf8JsonWriter writer, TNumber? value, JsonSerializerOptions options)
         {
             if (value.HasValue)
-                writer.WriteRawValue(value.Value.ToString("G", Invariant), skipInputValidation: true);
+                writer.WriteRawValue(value.Value.ToString(Options.NumberFormatString, Options.CultureInfo), skipInputValidation: true);
             else
                 writer.WriteNullValue();
         }
@@ -88,7 +87,7 @@ namespace SystemTextJsonHelpers.Converters
         public static NumberStyles RelaxedIntegralNumberStyles { get; } = NumberStyles.Integer | NumberStyles.AllowThousands;
         public static NumberStyles RelaxedRationalNumberStyles { get; } = NumberStyles.Float | NumberStyles.AllowThousands;
 
-        private static bool TryParseRelaxedWithThousandsSeparators(string numberString, out TNumber? value)
+        private bool TryParseRelaxedWithThousandsSeparators(string numberString, out TNumber? value)
             => numberString switch
             {
                 //NOTE: IsNullOrWhiteSpace() should have already been checked prior to attempting to Parse at all so it's not necessary here!
@@ -100,21 +99,21 @@ namespace SystemTextJsonHelpers.Converters
             };
 
 
-        private static bool TryParseInternal(string input, out TNumber? result)
+        private bool TryParseInternal(string input, out TNumber? result)
         {
             object? parsedValue = typeof(TNumber) switch
             {
-                var t when t == JsonTypeCache.LongType && long.TryParse(input, RelaxedIntegralNumberStyles, Invariant, out var l) => l,
-                var t when t == JsonTypeCache.IntType && int.TryParse(input, RelaxedIntegralNumberStyles, Invariant, out var i) => i,
-                var t when t == JsonTypeCache.ShortType && short.TryParse(input, RelaxedIntegralNumberStyles, Invariant, out var s) => s,
-                var t when t == JsonTypeCache.SByteType && sbyte.TryParse(input, RelaxedIntegralNumberStyles, Invariant, out var sb) => sb,
-                var t when t == JsonTypeCache.ULongType && ulong.TryParse(input, RelaxedIntegralNumberStyles, Invariant, out var ul) => ul,
-                var t when t == JsonTypeCache.UIntType && uint.TryParse(input, RelaxedIntegralNumberStyles, Invariant, out var ui) => ui,
-                var t when t == JsonTypeCache.UShortType && ushort.TryParse(input, RelaxedIntegralNumberStyles, Invariant, out var us) => us,
-                var t when t == JsonTypeCache.ByteType && byte.TryParse(input, RelaxedIntegralNumberStyles, Invariant, out var b) => b,
-                var t when t == JsonTypeCache.DoubleType && double.TryParse(input, RelaxedRationalNumberStyles, Invariant, out var d) => d,
-                var t when t == JsonTypeCache.FloatType && float.TryParse(input, RelaxedRationalNumberStyles, Invariant, out var f) => f,
-                var t when t == JsonTypeCache.DecimalType && decimal.TryParse(input, NumberStyles.Number, Invariant, out var dec) => dec,
+                var t when t == JsonTypeCache.LongType && long.TryParse(input, RelaxedIntegralNumberStyles, Options.CultureInfo, out var l) => l,
+                var t when t == JsonTypeCache.IntType && int.TryParse(input, RelaxedIntegralNumberStyles, Options.CultureInfo, out var i) => i,
+                var t when t == JsonTypeCache.ShortType && short.TryParse(input, RelaxedIntegralNumberStyles, Options.CultureInfo, out var s) => s,
+                var t when t == JsonTypeCache.SByteType && sbyte.TryParse(input, RelaxedIntegralNumberStyles, Options.CultureInfo, out var sb) => sb,
+                var t when t == JsonTypeCache.ULongType && ulong.TryParse(input, RelaxedIntegralNumberStyles, Options.CultureInfo, out var ul) => ul,
+                var t when t == JsonTypeCache.UIntType && uint.TryParse(input, RelaxedIntegralNumberStyles, Options.CultureInfo, out var ui) => ui,
+                var t when t == JsonTypeCache.UShortType && ushort.TryParse(input, RelaxedIntegralNumberStyles, Options.CultureInfo, out var us) => us,
+                var t when t == JsonTypeCache.ByteType && byte.TryParse(input, RelaxedIntegralNumberStyles, Options.CultureInfo, out var b) => b,
+                var t when t == JsonTypeCache.DoubleType && double.TryParse(input, RelaxedRationalNumberStyles, Options.CultureInfo, out var d) => d,
+                var t when t == JsonTypeCache.FloatType && float.TryParse(input, RelaxedRationalNumberStyles, Options.CultureInfo, out var f) => f,
+                var t when t == JsonTypeCache.DecimalType && decimal.TryParse(input, NumberStyles.Number, Options.CultureInfo, out var dec) => dec,
                 _ => null
             };
 

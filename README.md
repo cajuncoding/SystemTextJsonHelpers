@@ -28,6 +28,12 @@ then I do love-me-some-coffee!*
 </a>
 
 ## Release Notes
+### v1.3
+- Add support for Relaxed Date and Time parsing (when non-nullable) which delegates the the default Parse() method for DateTime, DateTimeOffset, DateOnly, & TimeOnly.
+- Added a BaseJsonStringDelegateConverter&lt;T&gt; (inspired by the Macross.Json.Extensions library) for easier conversion of string based values.
+- Greatly improved configurable options for string outputs of formatted items like DateTime, DateTimeOffset, Numbers, etc.
+- Options now include support for custom format strings, and overriding the culture info (Invariant is default), for better control over the output formatting of these types when serialized to JSON.
+
 ### v1.2
 - Added support for new custom attributes to enable multi-mapping of Enum values via [JsonStringEnumMemberMultiMap].
 - Added support to now explicitly define the primary mapping for output/writing of json via [JsonPrimaryStringEnumMemberMultiMap]; which also serves as a read mapping.

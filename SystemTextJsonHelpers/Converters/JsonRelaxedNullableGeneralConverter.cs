@@ -36,11 +36,11 @@ namespace SystemTextJsonHelpers.Converters
             {
                 case bool b: writer.WriteBooleanValue(b); break;
                 case Guid g: writer.WriteStringValue(g); break;
-                case DateTime dt: writer.WriteStringValue(dt); break;  // DateTime => ISO 8601 Round-trip ("O"/"o") => '2024-07-16T14:33:12.4570000-05:00'
-                case DateTimeOffset dto: writer.WriteStringValue(dto); break; // DateTimeOffset => ISO 8601 Round-trip ("O"/"o") => '2024-07-16T14:33:12.4570000-05:00'
-                case TimeSpan ts: writer.WriteStringValue(ts.ToString("c", Invariant)); break; // TimeSpan => '[-][d.]hh:mm:ss.fffffff'
-                case DateOnly d: writer.WriteStringValue(d.ToString("O", Invariant)); break; // DateOnly => ISO 8601 Date ("O"/"o") => '2024-07-16'
-                case TimeOnly t: writer.WriteStringValue(t.ToString("O", Invariant)); break; // TimeOnly => ISO 8601 Time ("O"/"o") => '14:33:12.4570000'
+                case DateTime dt: writer.WriteStringValue(dt.ToString(Options.DateTimeFormatString, Invariant)); break;  // DateTime => ISO 8601 Round-trip ("O"/"o") => '2024-07-16T14:33:12.4570000-05:00'
+                case DateTimeOffset dto: writer.WriteStringValue(dto.ToString(Options.DateTimeOffsetFormatString, Invariant)); break; // DateTimeOffset => ISO 8601 Round-trip ("O"/"o") => '2024-07-16T14:33:12.4570000-05:00'
+                case TimeSpan ts: writer.WriteStringValue(ts.ToString(Options.TimeSpanFormatString, Invariant)); break; // TimeSpan => '[-][d.]hh:mm:ss.fffffff'
+                case DateOnly d: writer.WriteStringValue(d.ToString(Options.DateOnlyFormatString, Invariant)); break; // DateOnly => ISO 8601 Date ("O"/"o") => '2024-07-16'
+                case TimeOnly t: writer.WriteStringValue(t.ToString(Options.TimeOnlyFormatString, Invariant)); break; // TimeOnly => ISO 8601 Time ("O"/"o") => '14:33:12.4570000'
                 default: writer.WriteStringValue(value.Value.ToString()); break;
             }
         }
