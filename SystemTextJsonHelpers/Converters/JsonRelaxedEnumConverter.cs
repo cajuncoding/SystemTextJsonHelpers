@@ -29,7 +29,7 @@ namespace SystemTextJsonHelpers.Converters
         {
             //For Non-nullable Enums enforce validation and throw exceptions for invalid token types or values that cannot be parsed
             //  to ensure the caller is aware of the issue and can handle it appropriately (vs using Nullable Enum we coerce all failures to null).
-            if (reader.TokenType is not JsonTokenType.String or JsonTokenType.Number)
+            if (reader.TokenType is not (JsonTokenType.String or JsonTokenType.Number))
                 throw new JsonException($"A valid Json String or Number token type is expected for enum parsing to '{EnumType}'.");
 
             return TryRead(ref reader, typeToConvert, options, out var enumResult)

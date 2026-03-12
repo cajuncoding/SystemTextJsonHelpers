@@ -15,7 +15,7 @@ namespace SystemTextJsonHelpers.Converters
             var jsonConverterType = typeToConvert switch
             {
                 Type t when t.IsEnum => typeof(JsonRelaxedEnumConverter<>).MakeGenericType(t)!,
-                Type t when t.TryGetNullableUnderlyingType(out var underlyingType) => typeof(JsonRelaxedEnumNullableConverter<>).MakeGenericType(underlyingType!),
+                Type t when t.TryGetNullableUnderlyingType(out var underlyingType) && underlyingType.IsEnum => typeof(JsonRelaxedEnumNullableConverter<>).MakeGenericType(underlyingType!),
                 _ => throw new InvalidOperationException("Unsupported type for JsonRelaxedEnumConverterFactory. Can only convert Enum types and Nullable<Enum> types.")
             };
             

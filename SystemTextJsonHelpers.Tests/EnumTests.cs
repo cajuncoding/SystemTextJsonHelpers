@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -13,7 +14,7 @@ namespace SystemTextJsonHelpers.Tests
 
         public enum Color
         {
-            Red,
+            Red = 1,
 
             [JsonPropertyName("green-color")]
 #if NET9_0_OR_GREATER
@@ -21,7 +22,7 @@ namespace SystemTextJsonHelpers.Tests
             [JsonStringEnumMemberName("Green-Net9Plus")]
 #endif
             [EnumMember(Value = "sea_green")]
-            Green,
+            Green = 2,
 
             [JsonPropertyName("BabyBlue")]
             [EnumMember(Value = "blue-color")]
@@ -32,12 +33,12 @@ namespace SystemTextJsonHelpers.Tests
             [JsonPrimaryStringEnumMemberMultiMap("MY-BLUE")] //Test Primary declaration overrides Ordinal Position when defined!
             [JsonStringEnumMemberMultiMap("SkyBlue")] // Test multiple aliases with EnumMemberMultiMapAttribute
             [JsonStringEnumMemberMultiMap("Cyan")] // Test multiple aliases with EnumMemberMultiMapAttribute
-            Blue,
+            Blue = 3,
 
             [EnumMember(Value = "orange-color")]
             [JsonStringEnumMemberMultiMap("BurntOrange")] // Test multiple aliases with EnumMemberMultiMapAttribute
             [JsonStringEnumMemberMultiMap("TangerineOrange")] // Test multiple aliases with EnumMemberMultiMapAttribute
-            Orange
+            Orange = 4
         }
 
         public enum Status
@@ -78,10 +79,12 @@ namespace SystemTextJsonHelpers.Tests
             Color ColorCaseInsensitive,
             Color ColorByEnumMemberAnnotation,
             Color ColorByJsonPropertyAnnotation,
+            Color ColorNumeric,
             Color? ColorNullable,
             Color? ColorNullableCaseInsensitive,
             Color? ColorNullableNull,
-            Color? ColorNullableInvalid
+            Color? ColorNullableInvalid,
+            Color? ColorNumericNullable
         );
 
         [TestMethod]
@@ -92,20 +95,24 @@ namespace SystemTextJsonHelpers.Tests
                 ""colorCaseInsensitive"": ""gReEn"",
                 ""colorByEnumMemberAnnotation"": ""blue-color"",
                 ""colorByJsonPropertyAnnotation"": ""green-color"",
+                ""colorNumeric"": 2,
                 ""colorNullable"": ""Blue"",
                 ""colorNullableCaseInsensitive"": ""rEd"",
                 ""colorNullableNull"": null,
-                ""colorNullableInvalid"": ""NotAColor""
+                ""colorNullableInvalid"": ""NotAColor"",
+                ""colorNumericNullable"": 1
             }".FromJsonTo<EnumTest>();
 
             Assert.AreEqual(Color.Red, t.Color);
             Assert.AreEqual(Color.Green, t.ColorCaseInsensitive);
             Assert.AreEqual(Color.Blue, t.ColorByEnumMemberAnnotation);
             Assert.AreEqual(Color.Green, t.ColorByJsonPropertyAnnotation);
+            Assert.AreEqual(Color.Green, t.ColorNumeric);
             Assert.AreEqual(Color.Blue, t.ColorNullable);
             Assert.AreEqual(Color.Red, t.ColorNullableCaseInsensitive);
             Assert.IsNull(t.ColorNullableNull);
             Assert.IsNull(t.ColorNullableInvalid);
+            Assert.AreEqual(Color.Red, t.ColorNumericNullable);
         }
 
         [TestMethod]

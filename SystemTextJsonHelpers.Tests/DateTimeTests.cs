@@ -109,5 +109,20 @@ namespace SystemTextJsonHelpers.Tests
             Assert.AreEqual(date, parsedDate);
             Assert.AreEqual(time, parsedTime);
         }
+
+        [TestMethod]
+        public void TestRelaxedDateAndTimeParsingOfCustomFormat()
+        {
+            var options = SystemTextJsonDefaults.CreateRelaxedJsonSerializerOptions();
+
+            var dateTime = DateTime.Now;
+            var dateTimeJson = $@"""{dateTime.ToString("yyyy-MM-dd HH:mm:ss")}"""; //YYYY-MM-DD HH:MM:SS
+
+            var parsedDateTime = dateTimeJson.FromJsonTo<DateTime?>(options);
+
+            Assert.IsNotNull(parsedDateTime);
+            Assert.AreEqual($"{dateTime:s}", $"{parsedDateTime:s}");
+        }
+
     }
 }
