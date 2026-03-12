@@ -28,6 +28,9 @@ then I do love-me-some-coffee!*
 </a>
 
 ## Release Notes
+### v1.3.1
+- Parsing bug fixes for Enum Number and Nullable Type handling.
+
 ### v1.3
 - Add support for Relaxed Date and Time parsing (when non-nullable) which delegates the the default Parse() method for DateTime, DateTimeOffset, DateOnly, & TimeOnly.
 - Added a BaseJsonStringDelegateConverter&lt;T&gt; (inspired by the Macross.Json.Extensions library) for easier conversion of string based values.
